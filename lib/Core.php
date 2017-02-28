@@ -9,6 +9,7 @@ namespace PhpCsStash;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\BrowserConsoleHandler;
+use PhpCsStash\Checker\CheckerOptions;
 
 class Core
 {
@@ -126,7 +127,12 @@ class Core
         $type = $this->getConfigSection('core')['type'];
 
         if ($type == 'phpcs') {
-            return new Checker\PhpCs($this->log, $this->getConfigSection('phpcs'));
+            $options = $this->getConfigSection('phpcs');
+            return new Checker\PhpCs($this->log, new CheckerOptions(
+                $options['standard'],
+                $options['encoding'],
+                $options['installed_paths']
+            ));
         } elseif ($type == 'cpp') {
             return new Checker\Cpp($this->log, $this->getConfigSection('cpp'));
         } else {

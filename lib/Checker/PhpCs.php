@@ -6,7 +6,7 @@
  */
 namespace PhpCsStash\Checker;
 
-use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class PhpCs implements CheckerInterface
 {
@@ -16,45 +16,39 @@ class PhpCs implements CheckerInterface
     private $phpcs;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $log;
 
     /**
-     * @param Logger   $log
-     * @param array $phpcs - ['encoding' => '....', 'standard' => '...']
+     * PhpCs constructor.
+     * @param LoggerInterface $log
+     * @param CheckerOptions $options
      */
-    public function __construct(Logger $log, array $config)
+    public function __construct(LoggerInterface $log, CheckerOptions $options)
     {
         $this->log = $log;
 
-        if (!empty($config['installed_paths'])) {
-            $GLOBALS['PHP_CODESNIFFER_CONFIG_DATA'] = array (
-                'installed_paths' => str_replace(
-                    '%root%',
-                    dirname(__DIR__),
-                    $config['installed_paths']
-                ),
-            );
-
-            $this->log->debug("installed_paths=".$GLOBALS['PHP_CODESNIFFER_CONFIG_DATA']['installed_paths']);
+        if ($options->getInstalledPaths()) {
+            $this->log->debug(sprintf('installed_paths: %s', $options->getInstalledPaths()));
         }
 
         $this->phpcs = new \PHP_CodeSniffer(
             $verbosity = 0,
             $tabWidth = 0,
-            $config['encoding'],
+            $options->getEncoding(),
             $interactive = false
         );
 
-        $this->log->debug("PhpCs config", $config);
+        $this->log->debug("PhpCs config" . print_r($options, true));
 
         $this->phpcs->cli->setCommandLineValues([
             '--report=json',
-            '--standard='.$config['standard'],
+            sprintf('--standard=%s', $options->getStandard()),
+            sprintf('--runtime-set installed_paths %s', $options->getInstalledPaths()),
         ]);
 
-        $this->phpcs->initStandard($config['standard']);
+        $this->phpcs->initStandard($options->getStandard());
     }
 
     /**
@@ -77,8 +71,7 @@ class PhpCs implements CheckerInterface
     public function processFile($filename, $extension, $fileContent)
     {
         $phpCsResult = $this->phpcs->processFile($filename, $fileContent);
-        $errors = $phpCsResult->getErrors();
 
-        return $errors;
+        return $phpCsResult->getErrors();
     }
 }
