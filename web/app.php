@@ -12,7 +12,7 @@ $env = getenv('APP_ENV') ?: 'prod';
 $app = new Silex\Application();
 $app->register(new Igorw\Silex\ConfigServiceProvider(__DIR__ . "/../config/$env.yml"));
 $app->register(new Silex\Provider\MonologServiceProvider(), [
-    'monolog.logfile' => __DIR__ . '/log/app.log',
+    'monolog.logfile' => __DIR__ . '/../log/app.log',
 ]);
 
 $app['monolog.phpcs'] = function ($app) {
