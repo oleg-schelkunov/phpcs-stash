@@ -14,8 +14,10 @@ $branch = isset($_GET['branch']) ? $_GET['branch'] : null;
 $slug = isset($_GET['slug']) ? $_GET['slug'] : null;
 $repo = isset($_GET['repo']) ? $_GET['repo'] : null;
 
+$config = new \PhpCsStash\Api\BranchConfig($branch, $slug, $repo);
+
 try {
-    var_dump($core->runSync($branch, $slug, $repo));
+    var_dump($core->runSync($config));
 } catch (\InvalidArgumentException $e) {
     header("HTTP/1.0 400 Bad Request");
 }

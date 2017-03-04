@@ -6,9 +6,12 @@
  */
 namespace PhpCsStash;
 
+use GuzzleHttp\Client;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\BrowserConsoleHandler;
+use PhpCsStash\Api\ApiUser;
+use PhpCsStash\Api\BranchConfig;
 use PhpCsStash\Checker\CheckerOptions;
 
 class Core
@@ -33,12 +36,27 @@ class Core
         $this->initLogger();
 
         $stashConfig = $this->getConfigSection('stash');
+
+        $user = new ApiUser($stashConfig['username'], $stashConfig['password']);
+
+        $config = [
+            'base_url' => sprintf("%s/rest/api/1.0/", rtrim($stashConfig['url'], '/')),
+            'defaults' => [
+                'timeout' => $stashConfig['httpTimeout'],
+                'headers' => [
+                    'Content-type' => 'application/json',
+                ],
+                'allow_redirects' => true,
+                'auth' => [$stashConfig['username'], $stashConfig['password']],
+            ],
+        ];
+
+        $client = new Client($config);
+
         $this->stash = new StashApi(
             $this->getLogger(),
-            $stashConfig['url'],
-            $stashConfig['username'],
-            $stashConfig['password'],
-            $stashConfig['timeout']
+            $client,
+            $user
         );
     }
 
@@ -84,23 +102,21 @@ class Core
     }
 
     /**
-     * Метод, который запускает работу всего приложения в синхронном режиме
-     * @param string $branch
-     * @param string $slug
-     * @param string $repo
-     * @throws \InvalidArgumentException
+     * Runs application synchronously
+     *
+     * @param BranchConfig $config
      * @return array
      */
-    public function runSync($branch, $slug, $repo)
+    public function runSync(BranchConfig $config)
     {
-        if (empty($branch) || empty($repo) || empty($slug)) {
+        if (empty($config->getBranch()) || empty($config->getRepo()) || empty($config->getSlug())) {
             $this->getLogger()->warning("Invalid request: empty slug or branch or repo", $_GET);
             throw new \InvalidArgumentException("Invalid request: empty slug or branch or repo");
         }
 
         $requestProcessor = $this->createRequestProcessor();
 
-        return $requestProcessor->processRequest($slug, $repo, $branch);
+        return $requestProcessor->processRequest($config);
     }
 
     /**

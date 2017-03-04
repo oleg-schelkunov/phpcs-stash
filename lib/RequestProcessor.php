@@ -6,6 +6,7 @@
  */
 namespace PhpCsStash;
 
+use PhpCsStash\Api\BranchConfig;
 use PhpCsStash\Checker\CheckerInterface;
 use PhpCsStash\Exception\StashJsonFailure;
 use PhpCsStash\Exception\StashFileInConflict;
@@ -50,21 +51,25 @@ class RequestProcessor
     }
 
     /**
-     * @param string $slug
-     * @param string $repo
-     * @param string $ref
+     * Processes request
      *
+     * @param BranchConfig $config
      * @return array
      */
-    public function processRequest($slug, $repo, $ref)
+    public function processRequest(BranchConfig $config)
     {
-        $this->log->info("Processing request with slug=$slug, repo=$repo, ref=$ref");
+        $this->log->info(sprintf(
+            'Processing request with slug=%s, repo=%s, ref=%s',
+            $config->getSlug(),
+            $config->getRepo(),
+            $config->getBranch()
+        ));
 
-        $pullRequests = $this->stash->getPullRequestsByBranch($slug, $repo, $ref);
+        $pullRequests = $this->stash->getPullRequestsByBranch($config);
 
         $this->log->info("Found {$pullRequests['size']} pull requests");
         foreach ($pullRequests['values'] as $pullRequest) {
-            $this->processPullRequest($slug, $repo, $pullRequest);
+            $this->processPullRequest($config->getSlug(), $config->getRepo(), $pullRequest);
         }
 
         // No pull requests found, so no errors

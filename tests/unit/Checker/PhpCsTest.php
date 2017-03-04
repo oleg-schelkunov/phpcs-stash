@@ -7,6 +7,9 @@ use Prophecy\Argument;
 use Prophecy\Prophecy\ObjectProphecy;
 use Psr\Log\LoggerInterface;
 
+/**
+ * @covers \PhpCsStash\Checker\PhpCs
+ */
 class PhpCsTest extends TestCase
 {
     public function test_processFile_returns_empty_array_when_given_empty_content()

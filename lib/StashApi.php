@@ -7,10 +7,12 @@
  */
 namespace PhpCsStash;
 
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\RequestException;
+use PhpCsStash\Api\ApiUser;
+use PhpCsStash\Api\BranchConfig;
 use PhpCsStash\Exception\StashFileInConflict;
-use GuzzleHttp\Client;
-use Monolog\Logger;
-use \GuzzleHttp\Exception\RequestException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class StashApi
@@ -20,38 +22,32 @@ class StashApi
 {
     const HTTP_TIMEOUT = 90;
 
-    /** @var Client */
+    /**
+     * @var ClientInterface
+     */
     private $httpClient;
 
-    /** @var Logger */
+    /**
+     * @var Logger
+     */
     private $logger;
 
+    /**
+     * @var string
+     */
     private $username;
 
     /**
-     * StashApi constructor.
-     * @param Logger $logger   объект для журналирования
-     * @param string $url      ссылка на стеш со слешом на конце. Например: http://atlassian-stash.com/
-     * @param string $user     пользователь, от имени которого будут делаться запросы
-     * @param string $password пароль пользователя
+     * @param LoggerInterface $logger
+     * @param ClientInterface $client
+     * @param ApiUser $user
      */
-    public function __construct(Logger $logger, $url, $user, $password, $timeout = self::HTTP_TIMEOUT)
+    public function __construct(LoggerInterface $logger, ClientInterface $client, ApiUser $user)
     {
-        $this->username = $user;
+        $this->username = $user->getUsername();
         $this->logger = $logger;
 
-        $config = [
-            'base_url' => "{$url}rest/api/1.0/",
-            'defaults' => [
-                'timeout' => $timeout,
-                'headers' => [
-                    'Content-type' => 'application/json',
-                ],
-                'allow_redirects' => true,
-                'auth' => [$user, $password],
-            ],
-        ];
-        $this->httpClient = new Client($config);
+        $this->httpClient = $client;
     }
 
     /**
@@ -266,25 +262,30 @@ class StashApi
     }
 
     /**
-     * Максмимальное количество пул реквестов - 100. Расчитываю на то что не будет более 100 пулреквестов на одну
-     * фичевую ветку :)
+     * Returns all pull request for a branch
      *
-     * @param string $slug
-     * @param string $repo
-     * @param string $ref
-     * @return array
+     * We assume that one branch would not have more than 100 pull requests :)
+     *
      * @see https://developer.atlassian.com/static/rest/stash/3.11.3/stash-rest.html#idp992528
+     *
+     * @param BranchConfig $config
+     * @return array
      */
-    public function getPullRequestsByBranch($slug, $repo, $ref)
+    public function getPullRequestsByBranch(BranchConfig $config)
     {
         $query = [
             "state" => "open",
-            "at" => $ref,
+            "at" => $config->getBranch(),
             "direction" => "OUTGOING",
             "limit" => 100,
         ];
 
-        return $this->sendRequest("projects/$slug/repos/$repo/pull-requests", "GET", $query);
+        return $this->sendRequest($this->getBaseUrl($config), "GET", $query);
+    }
+
+    private function getBaseUrl(BranchConfig $config)
+    {
+        return sprintf('projects/%s/repos/%/pull-requests', $config->getSlug(), $config->getRepo());
     }
 
     private function sendRequest($url, $method, $request)
@@ -292,15 +293,15 @@ class StashApi
         try {
             if (strtoupper($method) == 'GET') {
                 $this->logger->debug("Sending GET request to $url, query=" . json_encode($request));
-                $reply = $this->httpClient->get($url, ['query' => $request]);
+                $response = $this->httpClient->get($url, ['query' => $request]);
             } else {
                 $this->logger->debug("Sending $method request to $url, body=" . json_encode($request));
-                $reply = $this->httpClient->send(
+                $response = $this->httpClient->send(
                     $this->httpClient->createRequest($method, $url, ['body' => json_encode($request)])
                 );
             }
         } catch (RequestException $e) {
-            //Stash error: it can't send more then 1mb of json data. So just skip suck pull requests or files
+            // Stash error: it can't send more then 1mb of json data. So just skip suck pull requests or files
             $this->logger->debug("Request finished with error: " . $e->getMessage());
             if ($e->getMessage() == 'cURL error 56: Problem (3) in the Chunked-Encoded data') {
                 throw new Exception\StashJsonFailure($e->getMessage(), $e->getRequest(), $e->getResponse(), $e);
@@ -311,7 +312,7 @@ class StashApi
 
         $this->logger->debug("Request finished");
 
-        $json = (string) $reply->getBody();
+        $json = (string) $response->getBody();
 
         //an: пустой ответ - значит все хорошо
         if (empty($json)) {
