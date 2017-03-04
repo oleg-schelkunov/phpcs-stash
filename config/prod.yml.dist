@@ -2,7 +2,7 @@ debug: true
 
 stash:
     # Base url to atlassian stash or bitbucket
-    url: 'http://stash.com'
+    url: 'https://api.bitbucket.org'
     # Name of the user from which api will be used
     username: 'admin'
     # Password of the user
