@@ -6,36 +6,39 @@
  */
 namespace PhpCsStash;
 
+use PhpCsStash\Checker\CheckerInterface;
+use Psr\Log\LoggerInterface;
 use GuzzleHttp\Client;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Handler\BrowserConsoleHandler;
 use PhpCsStash\Api\ApiUser;
 use PhpCsStash\Api\BranchConfig;
 use PhpCsStash\Checker\CheckerOptions;
 
 class Core
 {
-    /** @var StashApi */
+    /**
+     * @var StashApi
+     */
     protected $stash;
 
-    /** @var Logger */
+    /**
+     * @var LoggerInterface
+     */
     protected $log;
 
-    /** @var array */
-    protected $config;
+    /**
+     * @var CheckerInterface
+     */
+    private $checker;
 
     /**
-     * Core constructor.
-     * @param string $configFilename путь к ini файлу конфигурации
+     * @param array $stashConfig
+     * @param LoggerInterface $logger
+     * @param CheckerInterface $checker
      */
-    public function __construct($configFilename)
+    public function __construct(array $stashConfig, LoggerInterface $logger, CheckerInterface $checker)
     {
-        $this->config = parse_ini_file($configFilename, true);
-
-        $this->initLogger();
-
-        $stashConfig = $this->getConfigSection('stash');
+        $this->log = $logger;
+        $this->checker = $checker;
 
         $user = new ApiUser($stashConfig['username'], $stashConfig['password']);
 
@@ -54,51 +57,10 @@ class Core
         $client = new Client($config);
 
         $this->stash = new StashApi(
-            $this->getLogger(),
+            $this->log,
             $client,
             $user
         );
-    }
-
-    protected function initLogger()
-    {
-        $this->log = new Logger(uniqid());
-        $dir = $this->config['logging']['dir']."/";
-
-        $this->log->pushHandler(
-            new StreamHandler($dir.date("Y-m-d").".log", $this->config['logging']['verbosityLog'])
-        );
-
-        $this->log->pushHandler(
-            new StreamHandler($dir.date("Y-m-d").".log", $this->config['logging']['verbosityError'])
-        );
-
-        $this->log->pushHandler(
-            new BrowserConsoleHandler()
-        );
-    }
-
-    /** @return Logger */
-    public function getLogger()
-    {
-        return $this->log;
-    }
-
-    /**
-     * @return StashApi
-     */
-    public function getStash()
-    {
-        return $this->stash;
-    }
-
-    /**
-     * @param string $section название секции в ini файле конфигурации
-     * @return array
-     */
-    public function getConfigSection($section)
-    {
-        return $this->config[$section];
     }
 
     /**
@@ -110,7 +72,7 @@ class Core
     public function runSync(BranchConfig $config)
     {
         if (empty($config->getBranch()) || empty($config->getRepo()) || empty($config->getSlug())) {
-            $this->getLogger()->warning("Invalid request: empty slug or branch or repo", $_GET);
+            $this->log->warning("Invalid request: empty slug or branch or repo", $_GET);
             throw new \InvalidArgumentException("Invalid request: empty slug or branch or repo");
         }
 
@@ -126,33 +88,11 @@ class Core
     protected function createRequestProcessor()
     {
         $requestProcessor = new RequestProcessor(
-            $this->getLogger(),
-            $this->getStash(),
-            $this->createChecker()
+            $this->log,
+            $this->stash,
+            $this->checker
         );
 
         return $requestProcessor;
-    }
-
-    /**
-     * @return Checker\CheckerInterface
-     * @throws Exception\Runtime
-     */
-    protected function createChecker()
-    {
-        $type = $this->getConfigSection('core')['type'];
-
-        if ($type == 'phpcs') {
-            $options = $this->getConfigSection('phpcs');
-            return new Checker\PhpCs($this->log, new CheckerOptions(
-                $options['standard'],
-                $options['encoding'],
-                $options['installed_paths']
-            ));
-        } elseif ($type == 'cpp') {
-            return new Checker\Cpp($this->log, $this->getConfigSection('cpp'));
-        } else {
-            throw new Exception\Runtime("Unknown checker type");
-        }
     }
 }
