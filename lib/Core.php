@@ -45,7 +45,7 @@ class Core
         $config = [
             'base_url' => sprintf("%s/rest/api/1.0/", rtrim($stashConfig['url'], '/')),
             'defaults' => [
-                'timeout' => $stashConfig['httpTimeout'],
+                'timeout' => $stashConfig['timeout'],
                 'headers' => [
                     'Content-type' => 'application/json',
                 ],

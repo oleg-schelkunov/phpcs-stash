@@ -41,14 +41,19 @@ $app['monolog.phpcs'] = function ($app) {
     return $log;
 };
 
-$app['phpcs.stash'] = function($app) {
+$app['phpcs.stash'] = function ($app) {
     return new \PhpCsStash\Core($app['stash'], $app['monolog.phpcs'], $app['checker.factory']);
 };
 
-$app['checker.factory'] = function($app) {
+$app['checker.factory'] = function ($app) {
     $type = $app['checker.type'];
     if ($type === 'phpcs') {
-        return new \PhpCsStash\Checker\PhpCs($app['monolog.phpcs'], $app['checker.phpcs']);
+        $options = new \PhpCsStash\Checker\CheckerOptions(
+            $app['checker.phpcs']['standard'],
+            $app['checker.phpcs']['encoding'],
+            $app['checker.phpcs']['installed_paths']
+        );
+        return new \PhpCsStash\Checker\PhpCs($app['monolog.phpcs'], $options);
     } elseif ($type === 'cpp') {
         return new \PhpCsStash\Checker\Cpp($app['monolog.phpcs'], $app['checker.phpcs']);
     }
@@ -58,7 +63,7 @@ $app['checker.factory'] = function($app) {
 
 $app->get('/webhook/{branch}/{slug}/{repo}', function ($branch, $slug, $repo) use ($app) {
     $service = $app['phpcs.stash'];
-    $service->runSync($branch, $slug, $repo);
+    $service->runSync(new \PhpCsStash\Api\BranchConfig($branch, $slug, $repo));
 })->assert('branch', '\w+')->assert('slug', '\w+')->assert('repo', '\w+');
 
 $app->run();
