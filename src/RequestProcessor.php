@@ -6,13 +6,13 @@
  */
 namespace PhpCsStash;
 
-use PhpCsStash\Api\BranchConfig;
-use PhpCsStash\Checker\CheckerInterface;
-use PhpCsStash\Exception\StashJsonFailure;
-use PhpCsStash\Exception\StashFileInConflict;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ServerException;
-use Monolog\Logger;
+use PhpCsStash\Api\BranchConfig;
+use PhpCsStash\Checker\CheckerInterface;
+use PhpCsStash\Exception\StashFileInConflict;
+use PhpCsStash\Exception\StashJsonFailure;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class RequestProcessor
@@ -26,7 +26,7 @@ class RequestProcessor
     private $stash;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $log;
 
@@ -36,12 +36,12 @@ class RequestProcessor
     private $checker;
 
     /**
-     * @param StashApi           $stash
-     * @param Logger             $log
-     * @param CheckerInterface   $checker
+     * @param LoggerInterface $log
+     * @param StashApi $stash
+     * @param CheckerInterface $checker
      */
     public function __construct(
-        Logger $log,
+        LoggerInterface $log,
         StashApi $stash,
         CheckerInterface $checker
     ) {

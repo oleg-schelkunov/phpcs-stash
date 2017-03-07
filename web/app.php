@@ -14,52 +14,9 @@ $app->register(new Igorw\Silex\ConfigServiceProvider(__DIR__ . "/../config/$env.
 $app->register(new Silex\Provider\MonologServiceProvider(), [
     'monolog.logfile' => __DIR__ . '/../log/app.log',
 ]);
-
-$app['monolog.phpcs'] = function ($app) {
-
-    $dir = $app['monolog.phpcs.dir'];
-    $log = new $app['monolog.logger.class']('phpcs');
-
-    $log->pushHandler(
-        new \Monolog\Handler\StreamHandler(
-            __DIR__ . '/../' . $dir . '/info.' . date("Y-m-d").".log",
-            $app['monolog.phpcs.info.level']
-        )
-    );
-
-    $log->pushHandler(
-        new \Monolog\Handler\StreamHandler(
-            __DIR__ . '/../' . $dir . '/error.' . date("Y-m-d").".log",
-            $app['monolog.phpcs.error.level']
-        )
-    );
-
-    $log->pushHandler(
-        new \Monolog\Handler\BrowserConsoleHandler()
-    );
-
-    return $log;
-};
-
-$app['phpcs.stash'] = function ($app) {
-    return new \PhpCsStash\Core($app['stash'], $app['monolog.phpcs'], $app['checker.factory']);
-};
-
-$app['checker.factory'] = function ($app) {
-    $type = $app['checker.type'];
-    if ($type === 'phpcs') {
-        $options = new \PhpCsStash\Checker\CheckerOptions(
-            $app['checker.phpcs']['standard'],
-            $app['checker.phpcs']['encoding'],
-            $app['checker.phpcs']['installed_paths']
-        );
-        return new \PhpCsStash\Checker\PhpCs($app['monolog.phpcs'], $options);
-    } elseif ($type === 'cpp') {
-        return new \PhpCsStash\Checker\Cpp($app['monolog.phpcs'], $app['checker.phpcs']);
-    }
-
-    throw new \PhpCsStash\Exception\Runtime("Unknown checker type");
-};
+$app->register(new \PhpCsStash\StashApiServiceProvider(), [
+    'phpcs.logdir' => __DIR__ . '/../log/',
+]);
 
 $app->get('/webhook/{branch}/{slug}/{repo}', function ($branch, $slug, $repo) use ($app) {
     $service = $app['phpcs.stash'];

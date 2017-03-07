@@ -8,7 +8,7 @@
  */
 namespace PhpCsStash\Exception;
 
-class Runtime extends \Exception
+class Runtime extends \RuntimeException
 {
 
 }

@@ -31,36 +31,15 @@ class Core
     private $checker;
 
     /**
-     * @param array $stashConfig
+     * @param StashApi $stash
      * @param LoggerInterface $logger
      * @param CheckerInterface $checker
      */
-    public function __construct(array $stashConfig, LoggerInterface $logger, CheckerInterface $checker)
+    public function __construct(StashApi $stash, LoggerInterface $logger, CheckerInterface $checker)
     {
         $this->log = $logger;
         $this->checker = $checker;
-
-        $user = new ApiUser($stashConfig['username'], $stashConfig['password']);
-
-        $config = [
-            'base_url' => sprintf("%s/rest/api/1.0/", rtrim($stashConfig['url'], '/')),
-            'defaults' => [
-                'timeout' => $stashConfig['timeout'],
-                'headers' => [
-                    'Content-type' => 'application/json',
-                ],
-                'allow_redirects' => true,
-                'auth' => [$stashConfig['username'], $stashConfig['password']],
-            ],
-        ];
-
-        $client = new Client($config);
-
-        $this->stash = new StashApi(
-            $this->log,
-            $client,
-            $user
-        );
+        $this->stash = $stash;
     }
 
     /**

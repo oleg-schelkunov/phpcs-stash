@@ -7,6 +7,7 @@
 namespace PhpCsStash\Checker;
 
 use Monolog\Logger;
+use Psr\Log\LoggerInterface;
 
 class Cpp implements CheckerInterface
 {
@@ -31,15 +32,15 @@ class Cpp implements CheckerInterface
     private $python27Executable;
     
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $log;
 
     /**
-     * @param Logger $log
+     * @param LoggerInterface $log
      * @param array $config
      */
-    public function __construct(Logger $log, $config)
+    public function __construct(LoggerInterface $log, $config)
     {
         $this->log = $log;
         $this->cpplint = $config['cpplint'];

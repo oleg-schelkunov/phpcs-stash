@@ -30,8 +30,6 @@ checker.cpp:
         # Maximum line length
         lineLength: 120
 
-# Log folder path
-monolog.phpcs.dir: log
 # Verbosity level for info log
 monolog.phpcs.info.level: DEBUG
 # Verbosity level for error log
