@@ -57,14 +57,14 @@ class StashApiServiceProvider implements ServiceProviderInterface, BootableProvi
 
         $log->pushHandler(
             new StreamHandler(
-                __DIR__ . '/../' . $dir . '/info.' . date("Y-m-d").".log",
+                $dir . '/info.' . date("Y-m-d").".log",
                 $app['monolog.phpcs.info.level']
             )
         );
 
         $log->pushHandler(
             new StreamHandler(
-                __DIR__ . '/../' . $dir . '/error.' . date("Y-m-d").".log",
+                $dir . '/error.' . date("Y-m-d").".log",
                 $app['monolog.phpcs.error.level']
             )
         );

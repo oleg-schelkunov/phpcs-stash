@@ -12,10 +12,13 @@ use Prophecy\Argument;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \PhpCsStash\StashApi
+ * @coversDefaultClass \PhpCsStash\StashApi
  */
 class StashApiTest extends TestCase
 {
+    /**
+     * @covers ::getPullRequestsByBranch
+     */
     public function test_getPullRequestsByBranch_returns_valid_result()
     {
         $api = $this->createStashApi();
