@@ -20,7 +20,7 @@ $app->register(new \PhpCsStash\StashApiServiceProvider(), [
 
 $app->get('/webhook/{branch}/{slug}/{repo}', function ($branch, $slug, $repo) use ($app) {
     $service = $app['phpcs.stash'];
-    $service->runSync(new \PhpCsStash\Api\BranchConfig($branch, $slug, $repo));
-})->assert('branch', '[\w/]+')->assert('slug', '[\w-]+')->assert('repo', '[\w-]+');
+    return $app->json($service->runSync(new \PhpCsStash\Api\BranchConfig($branch, $slug, $repo)));
+})->assert('branch', '[\w-/]+')->assert('slug', '[\w-]+')->assert('repo', '[\w-]+');
 
 $app->run();
