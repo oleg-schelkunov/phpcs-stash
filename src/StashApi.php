@@ -285,7 +285,7 @@ class StashApi
 
     private function getBaseUrl(BranchConfig $config)
     {
-        return sprintf('projects/%s/repos/%/pull-requests', $config->getSlug(), $config->getRepo());
+        return sprintf('projects/%s/repos/%s/pull-requests', $config->getSlug(), $config->getRepo());
     }
 
     private function sendRequest($url, $method, $request)
